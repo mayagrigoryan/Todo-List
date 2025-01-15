@@ -1,60 +1,18 @@
 import { useEffect, useReducer } from 'react'
 import { MyContext } from './context/context'
+import { API } from './api/api'
+import { reducer, initialState } from './store/store'
 import './App.css'
+
 import Todos from './components/Todos/Todos'
 import Input from './components/Input/Input'
-
-const initialState = {
-  text: '',
-  todos: [],
-}
-
-function reducer(state, action) {
-  switch (action.type) {
-    case 'SET_TEXT':
-      return { ...state, text: action.payload }
-    case 'SET_TODOS':
-      return { ...state, todos: action.payload }
-    case 'ADD_TODO':
-      return { ...state, todos: [action.payload, ...state.todos] }
-    case 'REMOVE_TODO':
-      return { ...state, todos: state.todos.filter((todo) => todo.id !== action.payload) }
-    case 'UPDATE_TODO':
-      return {
-        ...state,
-        todos: state.todos.map((todo) =>
-          todo.id === action.payload.id ? { ...todo, completed: action.payload.completed } : todo
-        )
-      }
-    case 'START_EDITING':
-      return {
-        ...state,
-        todos: state.todos.map((todo) =>
-          todo.id === action.payload ? { ...todo, isEditing: true } : todo
-        ),
-      }
-    case 'SAVE_EDIT':
-      return {
-        ...state,
-        todos: state.todos.map((todo) =>
-          todo.id === action.payload.id
-            ? { ...todo, title: action.payload.newTitle, isEditing: false }
-            : todo
-        ),
-      }
-    default:
-      return state
-  }
-}
 
 function App() {
 
   const [state, dispatch] = useReducer(reducer, initialState)
 
   useEffect(() => {
-    fetch('https://jsonplaceholder.typicode.com/todos?_limit=3')
-      .then((res) => res.json())
-      .then((res) => dispatch({ type: 'SET_TODOS', payload: res }))
+    API.getTodos(dispatch)
   }, [])
 
   const changeText = (e) => {
@@ -66,46 +24,15 @@ function App() {
       return
     }
 
-    fetch('https://jsonplaceholder.typicode.com/todos', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json'
-      },
-      body: JSON.stringify(
-        {
-          "userId": 1,
-          "title": state.text,
-          "completed": false
-        }
-      )
-    }).then((res) => res.json())
-      .then((res) => dispatch({ type: 'ADD_TODO', payload: res }))
+    API.addTodo(dispatch, state.text)
   }
 
   const remove = (id) => {
-    fetch(`https://jsonplaceholder.typicode.com/todos/${id}`, {
-      method: 'DELETE'
-    }).then(() => dispatch({ type: 'REMOVE_TODO', payload: id }))
+    API.removeTodo(dispatch, id)
   }
 
   const change = (id, completed) => {
-    fetch(`https://jsonplaceholder.typicode.com/todos/${id}`, {
-      method: 'PATCH',
-      headers: {
-        'content-type': 'application/json'
-      },
-      body: JSON.stringify(
-        {
-          completed: !completed
-        }
-      )
-    }).then((res) => res.json())
-      .then((updatedTodo) => {
-        dispatch({
-          type: 'UPDATE_TODO',
-          payload: { id, completed: updatedTodo.completed },
-        })
-      });
+    API.changeTodo(dispatch, id, completed)
   }
 
   const startEditing = (id) => {
@@ -113,7 +40,7 @@ function App() {
   }
 
   const saveEdit = (id, newTitle) => {
-    dispatch({ type: 'SAVE_EDIT', payload: { id, newTitle } })
+    API.saveEdit(dispatch, id, newTitle)
   }
 
   return (
@@ -124,12 +51,13 @@ function App() {
       startEditing,
       saveEdit,
       addTodo,
-      changeText
+      changeText,
+      remove
     }}>
       <div className='App'>
         <h1>My To Do List</h1>
         <div className='todo'>
-          <Input/>
+          <Input />
           <div>
             {state.todos.map((todo) => (
               <Todos
