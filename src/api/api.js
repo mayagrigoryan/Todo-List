@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { addTodoActionCreator, removeTodoActionCreator, saveEditActionCreator, setTodosActionCreator, updateTodoActionCreator } from '../store/store';
 
 const instance = axios.create({
     baseURL: 'https://jsonplaceholder.typicode.com/todos'
@@ -7,7 +8,7 @@ const instance = axios.create({
 export const API = {
     getTodos(dispatch) {
         instance.get('?_limit=3')
-            .then((res) => dispatch({ type: 'SET_TODOS', payload: res.data }))
+            .then((res) => dispatch(setTodosActionCreator(res.data)))
     },
 
     addTodo(dispatch, title) {
@@ -16,29 +17,23 @@ export const API = {
             title,
             completed: false
         })
-            .then((res) => dispatch({ type: 'ADD_TODO', payload: res.data }))
+            .then((res) => dispatch(addTodoActionCreator(res.data)))
     },
 
     removeTodo(dispatch, id) {
         instance.delete(`/${id}`)
-            .then(() => dispatch({ type: 'REMOVE_TODO', payload: id }))
+            .then(() => dispatch(removeTodoActionCreator(id)))
     },
 
     changeTodo(dispatch, id, completed) {
         instance.patch(`/${id}`, { completed: !completed })
             .then((res) => {
-                dispatch({
-                    type: 'UPDATE_TODO',
-                    payload: { id, completed: res.data.completed }
-                })
+                dispatch(updateTodoActionCreator(id, res.data.completed))
             })
     },
 
     saveEdit(dispatch, id, newTitle) {
         instance.put(`/${id}`, { title: newTitle })
-            .then((res) => dispatch({
-                type: 'SAVE_EDIT',
-                payload: { id, newTitle: res.data.title }
-            }))
+            .then((res) => dispatch(saveEditActionCreator(id, res.data.title)))
     }
 }
